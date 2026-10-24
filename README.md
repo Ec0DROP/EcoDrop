@@ -12,7 +12,7 @@ EcoDrop is a **Tech for Good** backend service designed to tackle food waste by 
 ---
 
 ## 🛠️ Tech Stack
-* **Language:** [To be updated - e.g., Python / Node.js / C++]
+* **Language:** Python 3.11+
 * **Framework:** [To be updated - e.g., FastAPI / Express / Crow]
 * **Database:** [To be updated - e.g., PostgreSQL]
 * **Containerization:** Docker
@@ -31,9 +31,42 @@ EcoDrop is a **Tech for Good** backend service designed to tackle food waste by 
 
 ### Prerequisites
 * Git
+* Python 3.11+
 
 ### Installation & Local Setup
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/YOUR-ORGANIZATION-OR-USERNAME/ecodrop.git](https://github.com/YOUR-ORGANIZATION-OR-USERNAME/ecodrop.git)
-   cd ecodrop
+   git clone https://github.com/Ec0DROP/EcoDrop.git
+   cd EcoDrop
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate      # Windows: .venv\Scripts\activate
+   ```
+3. Install the project in editable mode with dev tools:
+   ```bash
+   pip install -e ".[dev]"
+   ```
+
+### Common Commands
+| Task | Command |
+|------|---------|
+| Run the app | `python -m ecodrop` (or `ecodrop --help`) |
+| Lint | `ruff check .` |
+| Format | `ruff format .` |
+| Tests | `pytest` |
+
+Configuration is read from environment variables (`ECODROP_ENV`: `development`/`test`/`production`, `ECODROP_LOG_LEVEL`) and can be overridden with `--env` / `--log-level`.
+
+### Project Structure
+```
+src/ecodrop/
+├── __main__.py      # entry point
+├── api/             # HTTP routes, request/response schemas
+├── core/            # configuration, cross-cutting concerns
+├── domain/          # business entities and rules (no I/O)
+├── repositories/    # persistence and data access
+└── services/        # use cases
+tests/               # pytest test suite
+```
