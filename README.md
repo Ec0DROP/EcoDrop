@@ -1,5 +1,3 @@
-# EcoDrop
-
 EcoDrop is a Tech for Good API that reduces food waste. It connects local supermarkets and restaurants with food banks so that surplus food can be donated before it expires.
 
 **Stack:** Python 3.11+ · FastAPI · PostgreSQL · Docker · Postman · GitHub Actions · Render
@@ -12,17 +10,14 @@ EcoDrop is a Tech for Good API that reduces food waste. It connects local superm
 2. [Design Patterns & Guidelines](#2-design-patterns--guidelines)
 3. [Development Workflow](#3-development-workflow)
 4. [Setup & Run Instructions](#4-setup--run-instructions)
-5. [Verification Log](#5-verification-log)
-
 ---
 
 ## 1. Architecture Overview
 
 EcoDrop uses a **Layered Architecture**. Each layer depends only on the layer directly below it.
 
-![EcoDrop architecture](docs/architecture.png)
+<img width="1312" height="1199" alt="Architektura" src="https://github.com/user-attachments/assets/7b0a4d31-136b-4078-90da-3e0f33f1c9f0" />
 
-> Source model: `docs/architecture.mdj` (StarUML). Export the diagram to `docs/architecture.png` after every change.
 
 ```text
 Client (Postman / food bank app / donor app)
