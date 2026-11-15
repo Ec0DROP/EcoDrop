@@ -1,0 +1,139 @@
+{
+  "info": {
+    "name": "EcoDrop API",
+    "description": "POST /donations and GET /claims. See docs/api-endpoints.md for all test cases. expires_at values must be in the future on the day you test.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://127.0.0.1:8000" }],
+  "item": [
+    {
+      "name": "GET /claims",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('returns an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "GET", "url": "{{baseUrl}}/claims" }
+    },
+    {
+      "name": "POST /donations - valid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('has id', () => pm.expect(body.id).to.be.a('number'));",
+              "pm.test('status is available', () => pm.expect(body.status).to.eql('available'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/donations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Wholegrain bread\",\n  \"quantity\": 12.5,\n  \"unit\": \"kg\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+        }
+      }
+    },
+    {
+      "name": "POST /donations - expired (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+              "pm.test('error code', () => pm.expect(pm.response.json().error).to.eql('donation_expired'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/donations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 5,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-01-01T10:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+        }
+      }
+    },
+    {
+      "name": "POST /donations - invalid quantity and unit (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/donations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 0,\n  \"unit\": \"boxes\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+        }
+      }
+    },
+    {
+      "name": "POST /donations - missing field (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/donations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 5,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\"\n}"
+        }
+      }
+    },
+    {
+      "name": "POST /donations - expires_at without timezone (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/donations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 5,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-12-01T18:00:00\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+        }
+      }
+    }
+  ]
+}

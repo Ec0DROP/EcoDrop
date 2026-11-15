@@ -17,10 +17,14 @@ classifiers = [
     "Private :: Do Not Upload",
 ]
 # Core runtime dependencies. Add framework/database packages here as features land.
-dependencies = []
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+]
 
 [project.optional-dependencies]
 dev = [
+    "httpx2>=2.0",  # used by FastAPI's TestClient
     "pytest>=8.0",
     "ruff>=0.6",
 ]
