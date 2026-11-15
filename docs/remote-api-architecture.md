@@ -1,8 +1,8 @@
 # Remote API architecture: spike findings and proposal
 
-**Status:** Proposal, awaiting engineering team review
-**Scope:** The EcoDrop HTTP API as of `main` (`d925131`, PR #6) plus the open CRUD PR #7
-**Related:** [`ARCHITECTURE.md`](../ARCHITECTURE.md), [`docs/api-endpoints.md`](api-endpoints.md)
+- **Status:** Proposal, awaiting engineering team review
+- **Scope:** The EcoDrop HTTP API as of `main` (`d925131`, PR #6) plus the open CRUD PR #7
+- **Related:** [`ARCHITECTURE.md`](../ARCHITECTURE.md), [`docs/api-endpoints.md`](api-endpoints.md)
 
 This spike audits the current API, then proposes how the remote API layer should work: the protocol and contract, the data flow, authentication and authorization, and the work needed to get there. Decisions that need the team's agreement are listed in [section 7](#7-decisions-for-the-team).
 
