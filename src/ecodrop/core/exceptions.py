@@ -16,3 +16,27 @@ class EcoDropError(Exception):
 
 class DonationExpiredError(EcoDropError):
     code = "donation_expired"
+
+
+class DonationNotFoundError(EcoDropError):
+    status_code = HTTPStatus.NOT_FOUND
+    code = "donation_not_found"
+
+    def __init__(self, donation_id: int) -> None:
+        super().__init__(f"Donation {donation_id} not found")
+
+
+class DonationAlreadyClaimedError(EcoDropError):
+    status_code = HTTPStatus.CONFLICT
+    code = "donation_already_claimed"
+
+    def __init__(self, donation_id: int) -> None:
+        super().__init__(f"Donation {donation_id} is already claimed")
+
+
+class ClaimNotFoundError(EcoDropError):
+    status_code = HTTPStatus.NOT_FOUND
+    code = "claim_not_found"
+
+    def __init__(self, claim_id: int) -> None:
+        super().__init__(f"Claim {claim_id} not found")

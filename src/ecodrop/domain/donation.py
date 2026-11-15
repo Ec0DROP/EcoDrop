@@ -16,6 +16,8 @@ class Unit(StrEnum):
 class DonationStatus(StrEnum):
     AVAILABLE = "available"
     CLAIMED = "claimed"
+    # Never stored: derived from expires_at when a donation is read (see effective_status).
+    EXPIRED = "expired"
 
 
 @dataclass(frozen=True)
@@ -30,6 +32,11 @@ class Donation:
     status: DonationStatus = DonationStatus.AVAILABLE
     id: int | None = None
 
+    def effective_status(self, now: datetime) -> DonationStatus:
+        """A claimed batch stays claimed; an unclaimed one becomes expired after expires_at."""
+        if self.status is DonationStatus.AVAILABLE and self.expires_at <= now:
+            return DonationStatus.EXPIRED
+        return self.status
+
     def is_claimable(self, now: datetime) -> bool:
-        """A food bank can claim a batch only while it is available and not expired."""
-        return self.status is DonationStatus.AVAILABLE and self.expires_at > now
+        return self.effective_status(now) is DonationStatus.AVAILABLE
