@@ -8,6 +8,8 @@ import sys
 from collections.abc import Sequence
 from dataclasses import replace
 
+import uvicorn
+
 from ecodrop import __version__
 from ecodrop.core.config import ENVIRONMENTS, LOG_LEVELS, ConfigError, Settings
 
@@ -28,6 +30,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=str.upper,
         help="Logging level (overrides ECODROP_LOG_LEVEL).",
     )
+    parser.add_argument("--host", help="Bind address (overrides ECODROP_HOST).")
+    parser.add_argument("--port", type=int, help="Port (overrides ECODROP_PORT).")
     return parser
 
 
@@ -36,18 +40,26 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         settings = Settings.from_env()
-        overrides = {
-            key: value
-            for key, value in (("env", args.env), ("log_level", args.log_level))
-            if value is not None
+        cli_values = {
+            "env": args.env,
+            "log_level": args.log_level,
+            "host": args.host,
+            "port": args.port,
         }
+        overrides = {key: value for key, value in cli_values.items() if value is not None}
         settings = replace(settings, **overrides)
     except ConfigError as exc:
         print(f"Configuration error: {exc}", file=sys.stderr)
         return 2
 
     logging.basicConfig(level=settings.log_level, format="%(levelname)s %(name)s: %(message)s")
-    logger.info("EcoDrop %s started (env=%s)", __version__, settings.env)
+    logger.info("EcoDrop %s starting (env=%s)", __version__, settings.env)
+    uvicorn.run(
+        "ecodrop.main:app",
+        host=settings.host,
+        port=settings.port,
+        log_level=settings.log_level.lower(),
+    )
     return 0
 
 
