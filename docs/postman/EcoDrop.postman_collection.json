@@ -1,139 +1,835 @@
 {
   "info": {
     "name": "EcoDrop API",
-    "description": "POST /donations and GET /claims. See docs/api-endpoints.md for all test cases. expires_at values must be in the future on the day you test.",
+    "description": "Full CRUD flow for /donations and /claims. Run the folders in order with the Collection Runner against a freshly started server. expires_at values must be in the future on the day you test. See docs/api-endpoints.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [{ "key": "baseUrl", "value": "http://127.0.0.1:8000" }],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "donationId",
+      "value": ""
+    },
+    {
+      "key": "secondDonationId",
+      "value": ""
+    },
+    {
+      "key": "claimId",
+      "value": ""
+    }
+  ],
   "item": [
     {
-      "name": "GET /claims",
-      "event": [
+      "name": "1. Donations",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('200 OK', () => pm.response.to.have.status(200));",
-              "pm.test('returns an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
-            ]
+          "name": "List donations (empty)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"empty\", () => pm.expect(body).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations"
+          }
+        },
+        {
+          "name": "Create donation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"available\", () => pm.expect(body.status).to.eql('available'));",
+                  "pm.collectionVariables.set('donationId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/donations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Wholegrain bread\",\n  \"quantity\": 12.5,\n  \"unit\": \"kg\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create second donation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.collectionVariables.set('secondDonationId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/donations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donor_name\": \"Bistro Lucerna\",\n  \"food_name\": \"Vegetable soup\",\n  \"quantity\": 8,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-11-28T20:00:00+01:00\",\n  \"pickup_address\": \"ul. Żegańska 2, Warszawa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List donations (soonest expiry first)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"two, soup first\", () => pm.expect(body.map(d => d.food_name)).to.eql(['Vegetable soup', 'Wholegrain bread']));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations"
+          }
+        },
+        {
+          "name": "Get donation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"same id\", () => pm.expect(body.id).to.eql(pm.collectionVariables.get('donationId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations/{{donationId}}"
+          }
+        },
+        {
+          "name": "Get missing donation (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_not_found'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations/999"
+          }
+        },
+        {
+          "name": "Get donation with non-numeric id (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations/abc"
+          }
+        },
+        {
+          "name": "List donations with unknown status (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations?status=gone"
+          }
+        },
+        {
+          "name": "Update donation quantity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"quantity\", () => pm.expect(body.quantity).to.eql(20));",
+                  "pm.test(\"food unchanged\", () => pm.expect(body.food_name).to.eql('Wholegrain bread'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/donations/{{donationId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 20\n}"
+            }
+          }
+        },
+        {
+          "name": "Update donation with empty body",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/donations/{{donationId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "Update donation with past expiry (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_expired'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/donations/{{donationId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expires_at\": \"2026-01-01T10:00:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update donation with null field (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/donations/{{donationId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"food_name\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Create donation with past expiry (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_expired'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/donations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 5,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-01-01T10:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create donation with invalid quantity and unit (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/donations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Wholegrain bread\",\n  \"quantity\": 0,\n  \"unit\": \"boxes\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create donation without timezone (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/donations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Wholegrain bread\",\n  \"quantity\": 12.5,\n  \"unit\": \"kg\",\n  \"expires_at\": \"2026-12-01T18:00:00\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create donation with missing field (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/donations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Wholegrain bread\",\n  \"quantity\": 12.5,\n  \"unit\": \"kg\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\"\n}"
+            }
           }
         }
-      ],
-      "request": { "method": "GET", "url": "{{baseUrl}}/claims" }
+      ]
     },
     {
-      "name": "POST /donations - valid",
-      "event": [
+      "name": "2. Claims",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('201 Created', () => pm.response.to.have.status(201));",
-              "const body = pm.response.json();",
-              "pm.test('has id', () => pm.expect(body.id).to.be.a('number'));",
-              "pm.test('status is available', () => pm.expect(body.status).to.eql('available'));"
-            ]
+          "name": "List claims (empty)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"empty\", () => pm.expect(body).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/claims"
+          }
+        },
+        {
+          "name": "Claim donation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"donation id\", () => pm.expect(body.donation_id).to.eql(pm.collectionVariables.get('secondDonationId')));",
+                  "pm.collectionVariables.set('claimId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/claims",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donation_id\": {{secondDonationId}},\n  \"food_bank_name\": \"Bank Żywności Wawer\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Donation is now claimed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"claimed\", () => pm.expect(body.status).to.eql('claimed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations/{{secondDonationId}}"
+          }
+        },
+        {
+          "name": "Available list excludes claimed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"only bread\", () => pm.expect(body.map(d => d.id)).to.eql([pm.collectionVariables.get('donationId')]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations?status=available"
+          }
+        },
+        {
+          "name": "Claim same donation again (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_already_claimed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/claims",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donation_id\": {{secondDonationId}},\n  \"food_bank_name\": \"Another bank\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update claimed donation (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_already_claimed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/donations/{{secondDonationId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete claimed donation (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_already_claimed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/donations/{{secondDonationId}}"
+          }
+        },
+        {
+          "name": "Claim missing donation (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_not_found'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/claims",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donation_id\": 999,\n  \"food_bank_name\": \"Bank\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Claim with invalid body (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/claims",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donation_id\": 0,\n  \"food_bank_name\": \"  \"\n}"
+            }
+          }
+        },
+        {
+          "name": "List claims",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"one claim\", () => pm.expect(body.length).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/claims"
+          }
+        },
+        {
+          "name": "Get claim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"same id\", () => pm.expect(body.id).to.eql(pm.collectionVariables.get('claimId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/claims/{{claimId}}"
+          }
+        },
+        {
+          "name": "Get missing claim (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('claim_not_found'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/claims/999"
+          }
+        },
+        {
+          "name": "Cancel claim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/claims/{{claimId}}"
+          }
+        },
+        {
+          "name": "Donation is available again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"available\", () => pm.expect(body.status).to.eql('available'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations/{{secondDonationId}}"
+          }
+        },
+        {
+          "name": "Cancel claim again (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('claim_not_found'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/claims/{{claimId}}"
           }
         }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": "{{baseUrl}}/donations",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Wholegrain bread\",\n  \"quantity\": 12.5,\n  \"unit\": \"kg\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
-        }
-      }
+      ]
     },
     {
-      "name": "POST /donations - expired (400)",
-      "event": [
+      "name": "3. Cleanup",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-              "pm.test('error code', () => pm.expect(pm.response.json().error).to.eql('donation_expired'));"
-            ]
+          "name": "Delete donation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/donations/{{donationId}}"
+          }
+        },
+        {
+          "name": "Deleted donation is gone (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.text() ? pm.response.json() : null;",
+                  "pm.test(\"error code\", () => pm.expect(body.error).to.eql('donation_not_found'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/donations/{{donationId}}"
           }
         }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": "{{baseUrl}}/donations",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 5,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-01-01T10:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
-        }
-      }
-    },
-    {
-      "name": "POST /donations - invalid quantity and unit (422)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": ["pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": "{{baseUrl}}/donations",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 0,\n  \"unit\": \"boxes\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
-        }
-      }
-    },
-    {
-      "name": "POST /donations - missing field (422)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": ["pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": "{{baseUrl}}/donations",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 5,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-12-01T18:00:00Z\"\n}"
-        }
-      }
-    },
-    {
-      "name": "POST /donations - expires_at without timezone (422)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": ["pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "url": "{{baseUrl}}/donations",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"donor_name\": \"Green Market\",\n  \"food_name\": \"Milk\",\n  \"quantity\": 5,\n  \"unit\": \"l\",\n  \"expires_at\": \"2026-12-01T18:00:00\",\n  \"pickup_address\": \"ul. Lucerny 15, Warszawa\"\n}"
-        }
-      }
+      ]
     }
   ]
 }
