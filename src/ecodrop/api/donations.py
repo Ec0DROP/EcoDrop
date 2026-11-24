@@ -27,6 +27,7 @@ def list_donations(
 
 @router.get("/{donation_id}", response_model=DonationRead)
 def get_donation(donation_id: int, service: DonationServiceDep) -> Donation:
+    """Get a single donation by id, with its current effective status."""
     return service.get_donation(donation_id)
 
 

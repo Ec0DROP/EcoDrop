@@ -25,6 +25,7 @@ def list_claims(service: ClaimServiceDep) -> list[Claim]:
 
 @router.get("/{claim_id}", response_model=ClaimRead)
 def get_claim(claim_id: int, service: ClaimServiceDep) -> Claim:
+    """Get a single claim by id."""
     return service.get_claim(claim_id)
 
 
